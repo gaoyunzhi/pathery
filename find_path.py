@@ -1,3 +1,4 @@
+from get_printable_map import get_printable_map
 S = "S"
 E = "E"
 B = "1"
@@ -8,27 +9,28 @@ DIRECTION = [(-1, 0), (1, 0), (0, -1), (0, 1)]
 def in_boundary(x, y, L, W):
 	return 0 <= x < L and 0 <= y < W
 
-def get_dis_map(test_map, start, end, L, W)
+def get_dis_map(test_map, start, end, L, W):
 	dis_map = [[-1] * W for _ in xrange(L)]
 	queue = []
-	for i in xrange(L):
-		for j in xrange(W):
-			if test_map[i][j] == S:
-				queue.add((i, j))
+	for x in xrange(L):
+		for y in xrange(W):
+			if test_map[x][y] == start:
+				queue.append((x, y))
+				dis_map[x][y] = 0
 	p = 0 
 	distance = -1
 	while p < len(queue):
+		x, y = queue[p]
 		if dis_map[x][y] == distance:
 			break
 		for dx, dy in DIRECTION:
-			x, y = queue[p]
 			nx, ny = x + dx, y + dy
 			if not in_boundary(nx, ny, L, W):
 				continue
-			if dis_map[nx][ny] == -1 and test_map[nx][ny] == O: 
-				queue.add((nx, ny))
+			if dis_map[nx][ny] == -1 and test_map[nx][ny] in [O, S, E]: 
+				queue.append((nx, ny))
 				dis_map[nx][ny] = dis_map[x][y] + 1
-				if test_map[nx][ny] == E:
+				if test_map[nx][ny] == end:
 					distance = dis_map[nx][ny]
 		p += 1
 	return dis_map, distance
@@ -43,7 +45,7 @@ def find_path(test_map):
 	path_map = {}
 	for i in xrange(L):
 		for j in xrange(W):
-			if start_map[i][j] + end_map[i][j] == dis:
+			if start_map[i][j] + end_map[i][j] == dis and test_map[i][j] == O:
 				current_dis = start_map[i][j]
 				path_map[current_dis] = path_map.get(current_dis, set())
 				path_map[current_dis].add((i, j))
