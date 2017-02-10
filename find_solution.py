@@ -73,7 +73,7 @@ def pull_down_solution_space(solution_space, test_map, computed_solutions, num_r
 	for num in solution_space:
 		if num <= 1:
 			continue
-		distances = sorted(solution_space[num].keys())[-2:]
+		distances = sorted(solution_space[num].keys())[-1:]
 		for dis in distances:
 			for solution_key in solution_space[num][dis]:
 				solution = solution_space[num][dis][solution_key]
