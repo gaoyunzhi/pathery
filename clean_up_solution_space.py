@@ -1,5 +1,5 @@
 LIMIT = 20
-LEVEL_LIMIT = 2
+LEVEL_LIMIT = 100
 
 def clean_up_solution_space(solution_space):
 	for current_number in solution_space:
