@@ -1,4 +1,4 @@
-W = 0.25
+W = 0.95
 
 def get_weighted_choice(path_map):
 	choice = {}
