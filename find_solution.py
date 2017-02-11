@@ -1,74 +1,61 @@
-from find_path import find_path
+from find_dis import find_dis
 from get_solution_hash import get_solution_hash
-from clean_up_solution_space import clean_up_solution_space
 from get_printable_map import get_printable_map
 from time import clock
 from get_weighted_random import get_weighted_random
+from get_solution_distribution import get_solution_distribution
+from get_next_points import get_next_points
 from random import sample
-U = "2"
+from apply_solution import apply_solution
 
-RAW_ROUND = 15
+
+RAW_ROUND = 50
 NUM_ROUND = 1000
 PULL_UP_TIME = 1
 SAMPLE_LIMIT_DELTA = 2
+CEILING_HIGH = 3
 
-def apply_solution(test_map, solution):
-	result_map = [list(line) for line in test_map]
-	for i, j in solution:
-		result_map[i][j] = U
-	return result_map
-
-def add_raw_solution(test_map, N, solution_space, computed_solutions, num_round, probability_space):
-	path_map, dis = find_path(test_map)
+def add_raw_solution(test_map, N, solution_space, computed_solutions, num_round, probability_space, cache_next_points):
 	solution = set()
-	for n in xrange(1, N + 4):
-		solution, dis, path_map = pull_up_solution(test_map, solution, set(), path_map, solution_space, computed_solutions, num_round, probability_space)
+	for n in xrange(1, N + CEILING_HIGH):
+		solution = pull_up_solution(test_map, solution, solution_space, computed_solutions, num_round, probability_space, cache_next_points)
 		if solution == None:
 			return
 
-def pull_up_solution(test_map, solution, blocking_points, path_map, solution_space, computed_solutions, num_round, probability_space):
+def pull_up_solution(test_map, solution, solution_space, computed_solutions, num_round, probability_space, cache_next_points):
 	solution = set(solution)
-	while True:
-		choice = path_map - blocking_points
-		if not choice:
-			return None, None, None
-		point = get_weighted_random(choice, probability_space)
+	next_points = get_next_points(cache_next_points, solution, test_map)
+	points = get_weighted_random(next_points, probability_space, solution, computed_solutions)
+	last_good_solution = None
+	for point in points:
 		solution.add(point)
-		if get_solution_hash(solution) in computed_solutions:
-			blocking_points.add(point)
-			solution.remove(point)
-			continue
 		apply_solution(test_map, solution)
-		path_map, dis = find_path(apply_solution(test_map, solution))
-		if dis != -1:
+		dis = find_dis(apply_solution(test_map, solution))
+		if dis == -1:
 			computed_solutions[get_solution_hash(solution)] = -1
-			break
-		blocking_points.add(point)
+		else:
+			add_solution(solution_space, solution, dis, computed_solutions, num_round)	
+			last_good_solution = solution	
+		next_points[0].discard(point)
+		next_points[1].discard(point)
 		solution.remove(point)
-	add_solution(solution_space, solution, dis, len(solution), computed_solutions, num_round)
-	return solution, dis, path_map
+	return last_good_solution
 
-def pull_up_solution_space(solution_space, test_map, N, computed_solutions, num_round, probability_space):
+def pull_up_solution_space(solution_space, test_map, N, computed_solutions, num_round, probability_space, cache_next_points):
 	for num in sorted(solution_space.keys()):
-		if num > N + 4:
+		if num >= N + CEILING_HIGH:
 			continue
 		sample_limit = 0
 		for dis in sorted(solution_space[num].keys())[-4:]:
 			sample_limit += SAMPLE_LIMIT_DELTA
 			items=solution_space[num][dis].items() # List of tuples
-			new_items = [item for item in items if computed_solutions[item[0]] == num_round]
+			new_items = [item for item in items if computed_solutions[item[0]] > num_round - 2]
 			if len(new_items) > sample_limit:
 				new_items = sample(new_items, sample_limit)
 			if len(items) > sample_limit:
 				items = sample(items, sample_limit)
 			for solution_key, solution in items + new_items:
-				blocking_points = set()
-				path_map, _ = find_path(apply_solution(test_map, solution))
-				for x in xrange(PULL_UP_TIME * sample_limit * 2 / len(items + new_items)):
-					new_solution, new_dis, _ = \
-						pull_up_solution(test_map, solution, blocking_points, path_map, solution_space, computed_solutions, num_round, probability_space)
-					if new_solution == None:
-						break
+				pull_up_solution(test_map, solution, solution_space, computed_solutions, num_round, probability_space, cache_next_points)
 
 def pull_down_solution_space(solution_space, test_map, computed_solutions, num_round, probability_space):
 	for num in sorted(solution_space.keys())[::-1]:
@@ -82,21 +69,22 @@ def pull_down_solution_space(solution_space, test_map, computed_solutions, num_r
 				add_to_probability_space(probability_space, solution, reverse_weight)
 				if computed_solutions[get_solution_hash(solution)] < num_round - 1:
 					continue
+				new_solution = set(solution)
 				for point in solution:
-					new_solution = set(solution)
 					new_solution.remove(point)
-					if get_solution_hash(new_solution) in computed_solutions:
-						continue
-					_, new_dis = find_path(apply_solution(test_map, new_solution))
-					add_solution(solution_space, new_solution, new_dis, num - 1, computed_solutions, num_round)
+					if not get_solution_hash(new_solution) in computed_solutions:
+						new_dis = find_dis(apply_solution(test_map, new_solution))
+						add_solution(solution_space, new_solution, new_dis, computed_solutions, num_round)
+					new_solution.add(point)
 
 def add_to_probability_space(probability_space, solution, reverse_weight):
 	for x, y in solution:
 		probability_space[x][y] += 1.0 / reverse_weight
 
-def add_solution(solution_space, solution, dis, num, computed_solutions, num_round):
+def add_solution(solution_space, solution, dis, computed_solutions, num_round):
+	num = len(solution)
 	solution_space[num][dis] = solution_space[num].get(dis, {})
-	solution_space[num][dis][get_solution_hash(solution)] = solution
+	solution_space[num][dis][get_solution_hash(solution)] = set(solution)
 	computed_solutions[get_solution_hash(solution)] = num_round
 
 def get_init_probability_space(test_map):
@@ -104,26 +92,23 @@ def get_init_probability_space(test_map):
 
 def find_solution(test_map, N):
 	solution_space = {}
-	for i in xrange(N + 10):
+	for i in xrange(N + CEILING_HIGH + 1):
 		solution_space[i] = {}
 	start_time = clock()
 	computed_solutions = {}
+	cache_next_points = {}
 	probability_space = get_init_probability_space(test_map)
 	for num_round in xrange(1, NUM_ROUND):
 		start_time = clock()
 		for _ in xrange(RAW_ROUND):
-			# TODO: see if init probablity space is better or old probality space is better
-			add_raw_solution(test_map, N, solution_space, computed_solutions, num_round, probability_space)
-		clean_up_solution_space(solution_space)
+			add_raw_solution(test_map, N, solution_space, computed_solutions, num_round, probability_space, cache_next_points)
 		probability_space = get_init_probability_space(test_map)
 		raw_round = int((clock() - start_time) * 1000)
 		start_time = clock()
 		pull_down_solution_space(solution_space, test_map, computed_solutions, num_round, probability_space)
-		clean_up_solution_space(solution_space)
 		pull_down = int((clock() - start_time) * 1000)
 		start_time = clock()
-		pull_up_solution_space(solution_space, test_map, N, computed_solutions, num_round, probability_space)
-		clean_up_solution_space(solution_space)
+		pull_up_solution_space(solution_space, test_map, N, computed_solutions, num_round, probability_space, cache_next_points)
 		pull_up = int((clock() - start_time) * 1000)
 		## test
 		if num_round % 10 == 0:
@@ -133,7 +118,9 @@ def find_solution(test_map, N):
 			print "RAW_ROUND", raw_round
 			print "PULL_DOWN", pull_down
 			print "PULL_UP", pull_up
-			print get_printable_map(solution_map), len(solution_space[N][dis]), solution, num_round, dis
+			print get_printable_map(solution_map)
+			print get_solution_distribution(solution_space), 
+			print num_round, dis
 	dis = max(solution_space[N].keys())
 	solution = solution_space[N][dis].itervalues().next()
 	solution_map = apply_solution(test_map, solution)

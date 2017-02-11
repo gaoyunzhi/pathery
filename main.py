@@ -11,7 +11,7 @@ for (dirpath, dirnames, filenames) in walk(TEST_DIRECTORY):
 all_filenames = [d + f for (d, f) in all_filenames if f.endswith('.txt')]
 
 for file in all_filenames:
-	if not file.endswith("input.txt"):
+	if not file.endswith("normal.txt"):
 		continue
 	test_map, num = read_map(file)
 	for x in find_solution(test_map, num):
