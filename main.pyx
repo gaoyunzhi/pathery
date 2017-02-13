@@ -5,7 +5,6 @@ from find_solution import find_solution
 from os import walk
 
 def main(input):
-	print "RUNING_MAIN"
 	all_filenames = []
 	for (dirpath, dirnames, filenames) in walk(TEST_DIRECTORY):
 		for fn in filenames:
@@ -16,6 +15,6 @@ def main(input):
 	for file in all_filenames:
 		if not file.endswith(input + ".txt"):
 			continue
-		test_map, num = read_map(file)
-		for x in find_solution(test_map, num):
+		test_map, num, ans = read_map(file)
+		for x in find_solution(test_map, num, ans):
 			print x

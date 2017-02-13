@@ -120,7 +120,7 @@ def add_solution(solution_space, solution, dis, computed_solutions, num_round):
 def get_init_probability_space(test_map):
 	return [[0.1 for _ in line] for line in test_map]
 
-def find_solution(test_map, N):
+def find_solution(test_map, N, ANS):
 	solution_space = {}
 	for i in xrange(N + CEILING_HIGH + 1):
 		solution_space[i] = {}
