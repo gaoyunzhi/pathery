@@ -1,3 +1,4 @@
+from time import clock
 from in_boundary import in_boundary
 V = "1"
 O = "0"
@@ -23,7 +24,7 @@ class Structure(object):
 					self.components.append(set([(i,j)]))
 					self.expand(self.components[-1])
 		self.dis_map = [{} for _ in self.components]
-		print self.mark_components()
+		# print self.mark_components()
 		self.tangent_map = {}
 		self.tangents = [set() for _ in self.components]
 		for index, component in enumerate(self.components):
@@ -31,8 +32,15 @@ class Structure(object):
 		# print self.tangent_map
 		self.compute_path()
 		self.paths.sort(reverse=True)
+		# test
+		arrg = {}
+		for pl, ps, contangent in self.paths:
+			arrg[pl] = arrg.get(pl, 0) + 1
+		print arrg
+		# self.paths = self.paths[-100:]
 
 	def find_structure_external(self):
+		self.time0 = clock()
 		self.visited_structure = set()
 		self.find_structure(-1, [set([0, 1])], set())
 
