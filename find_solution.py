@@ -8,6 +8,8 @@ from get_next_points import get_next_points
 from random import sample
 from apply_solution import apply_solution
 from convert_accompany_space import convert_accompany_space
+from solution_space import SolutionSpace
+from populated_structure_solutions import populated_structure_solutions
 
 RAW_ROUND = 500
 NUM_ROUND = 1000
@@ -121,46 +123,23 @@ def get_init_probability_space(test_map):
 	return [[0.1 for _ in line] for line in test_map]
 
 def find_solution(test_map, N, ANS):
-	solution_space = {}
-	for i in xrange(N + CEILING_HIGH + 1):
-		solution_space[i] = {}
-	start_time = clock()
-	computed_solutions = {}
-	cache_next_points = {}
-	probability_space = get_init_probability_space(test_map)
-	accompany_space = {}
-	max_time_per_round = 1000
-	pull_down = 0
-	pull_up = 0
-	for num_round in xrange(1, NUM_ROUND):
-		start_time = clock()
-		for _ in xrange((max_time_per_round - pull_down - pull_up) * 10):
-			add_raw_solution(test_map, N, solution_space, computed_solutions, num_round, probability_space, cache_next_points, accompany_space)
-		probability_space = get_init_probability_space(test_map)
-		accompany_space = {}
-		raw_round = int((clock() - start_time) * 1000)
-		start_time = clock()
-		pull_down_solution_space(solution_space, test_map, computed_solutions, num_round, probability_space, accompany_space)
-		accompany_space = convert_accompany_space(accompany_space)
-		pull_down = int((clock() - start_time) * 1000)
-		start_time = clock()
-		pull_up_solution_space(solution_space, test_map, N, computed_solutions, num_round, probability_space, cache_next_points, accompany_space)
-		pull_up = int((clock() - start_time) * 1000)
-		## test
-		if num_round % 10 == 0 or num_round < 10:
-			dis = -1
-			solution = set()
-			if solution_space[N]:
-				dis = max(solution_space[N].keys())
-				solution = solution_space[N][dis].itervalues().next()
-			solution_map = apply_solution(test_map, solution)
-			print "RAW_ROUND", raw_round
-			print "PULL_DOWN", pull_down
-			print "PULL_UP", pull_up
-			print get_printable_map(solution_map)
-			print get_solution_distribution(solution_space), 
-			print num_round, dis
-	dis = max(solution_space[N].keys())
-	solution = solution_space[N][dis].itervalues().next()
-	solution_map = apply_solution(test_map, solution)
-	return N, get_printable_map(solution_map), solution, dis
+	LEVEL = 0
+	solution_space = SolutionSpace(test_map, N, ANS)
+	solution_space.add(set())
+	populated_structure_solutions(solution_space, test_map, N)
+	
+
+
+		
+
+	# 		solution_map = apply_solution(test_map, solution)
+	# 		print "RAW_ROUND", raw_round
+	# 		print "PULL_DOWN", pull_down
+	# 		print "PULL_UP", pull_up
+	# 		print get_printable_map(solution_map)
+	# 		print get_solution_distribution(solution_space), 
+	# 		print num_round, dis
+	# dis = max(solution_space[N].keys())
+	# solution = solution_space[N][dis].itervalues().next()
+	# solution_map = apply_solution(test_map, solution)
+	# return N, get_printable_map(solution_map), solution, dis
