@@ -24,3 +24,4 @@ def main(arg):
 			continue
 		test_map, num, ans = read_map(d + f)
 		find_solution(test_map, num, ans)
+		break

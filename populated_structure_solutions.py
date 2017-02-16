@@ -4,9 +4,13 @@ V = "1"
 O = "0"
 from get_printable_map import get_printable_map
 from get_solution_hash import get_solution_hash
+from apply_solution import apply_solution
+from trimer import Trimer
+
 
 class Structure(object):
 	def __init__(self, test_map, solution_space, N):
+		self.trimer = Trimer(test_map)
 		self.N = N
 		self.solution_space = solution_space
 		self.test_map = test_map
@@ -24,7 +28,7 @@ class Structure(object):
 					self.components.append(set([(i,j)]))
 					self.expand(self.components[-1])
 		self.dis_map = [{} for _ in self.components]
-		# print self.mark_components()
+		print self.mark_components()
 		self.tangent_map = {}
 		self.tangents = [set() for _ in self.components]
 		for index, component in enumerate(self.components):
@@ -37,14 +41,16 @@ class Structure(object):
 		for pl, ps, contangent in self.paths:
 			arrg[pl] = arrg.get(pl, 0) + 1
 		print arrg
-		# self.paths = self.paths[-100:]
 
 	def find_structure_external(self):
-		self.time0 = clock()
-		self.visited_structure = set()
-		self.find_structure(-1, [set([0, 1])], set())
+		self.time0 = self.time_last = clock()
+		self.find_structure(-1, [set([0, 1])], set(), [])
 
-	def find_structure(self, index, disjoint_set, solution):
+	def find_structure(self, index, disjoint_set, solution, tangents):
+		if clock() - self.time_last > 30:
+			self.time_last = clock()
+			print get_printable_map(apply_solution(self.test_map, solution))
+			print tangents, "ELAPSED", int((clock() - self.time0) * 10) * 0.1
 		for i in xrange(index + 1, len(self.paths)):
 			path_len, points, tangent = self.paths[i]
 			if path_len + len(solution) > self.N:
@@ -56,11 +62,14 @@ class Structure(object):
 				continue
 			n_solution = set(solution)
 			n_solution.update(points)
-			solution_hash = get_solution_hash(n_solution)
-			if solution_hash in self.visited_structure:
+			self.trimer.trim(n_solution)
+			_, duplication = self.solution_space.addSafe(n_solution)
+			duplication = duplication == None # 
+			if duplication:
 				continue
-			self.solution_space.addSafeWithHash(n_solution, solution_hash)
-			self.find_structure(i + 1, n_disjoint_set, n_solution)
+			n_tangents = list(tangents)
+			n_tangents.append(tangent)
+			self.find_structure(i + 1, n_disjoint_set, n_solution, n_tangents)
 
 	def get_disjoint_set(self, disjoint_set, tangent):
 		connected = set(tangent)
@@ -80,6 +89,11 @@ class Structure(object):
 		n = len(self.components)
 		self.paths = []
 		self.paths_dedup = set()
+		self.components_dis = [[0 for _ in self.components] for __ in self.components]
+		for i in xrange(n):
+			for j in xrange(max(i + 1, 2), n):
+				dis, starts = self.get_dis(self.tangents[i], self.dis_map[j])
+				self.components_dis[i][j] = self.components_dis[j][i] = dis 
 		for i in xrange(n):
 			for j in xrange(max(i + 1, 2), n):
 				dis, starts = self.get_dis(self.tangents[i], self.dis_map[j])
@@ -103,6 +117,13 @@ class Structure(object):
 				if in_boundary(nx, ny, self.L, self.W) and \
 					self.dis_map[i].get(np, -2) == d1 and \
 					self.dis_map[j].get(np, -2) == d2:
+					bad = False
+					for index in self.tangent_map.get(np, set()):
+						if self.components_dis[i][index] + self.components_dis[index][j] < \
+							self.components_dis[i][j]:
+							bad = True
+					if bad:
+						continue
 					npoints = set(points)
 					npoints.add(np)
 					nconnects = set(connects)

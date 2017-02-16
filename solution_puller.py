@@ -6,7 +6,6 @@ class SolutionPuller(object):
 		self.solution_space = solution_space
 		self.N = N
 		self.LEVEL = 0
-		self.SUCCESS = False
 		self.next_point = next_point
 		self.did_nothing_time = 0
 
@@ -30,7 +29,7 @@ class SolutionPuller(object):
 				for p in solution:
 					n_solution = set(solution)
 					n_solution.remove(p)
-					new_level, self.SUCCESS = self.solution_space.addSafe(n_solution)
+					new_level, _ = self.solution_space.addSafe(n_solution)
 					if new_level < self.LEVEL:
 						self.LEVEL = new_level
 						self.updateDidNothing(False)
@@ -51,7 +50,7 @@ class SolutionPuller(object):
 				for p in self.next_point.get(solution):
 					n_solution = set(solution)
 					n_solution.add(p)
-					new_level, self.SUCCESS = self.solution_space.addSafe(n_solution)
+					new_level, _ = self.solution_space.addSafe(n_solution)
 					if new_level < self.LEVEL:
 						self.LEVEL = new_level
 						self.updateDidNothing(False)

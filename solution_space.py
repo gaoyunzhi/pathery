@@ -5,7 +5,7 @@ from get_printable_map import get_printable_map
 
 MAX_LEVEL = 10000
 class SolutionSpace(object):
-	def __init__(self, test_map, N, ANS):
+	def __init__(self, test_map, N, ANS, dis_finder):
 		self.ANS = ANS
 		self.best_solution = None
 		self.best = {}
@@ -20,6 +20,7 @@ class SolutionSpace(object):
 		self.test_map = test_map
 		self.N = N
 		self.SUCCESS = False
+		self.dis_finder = dis_finder
 
 	def add(self, solution):
 		solution_hash = get_solution_hash(solution)
@@ -37,11 +38,11 @@ class SolutionSpace(object):
 		return self._add(solution, solution_hash)
 
 	def _add(self, solution, solution_hash):
-		dis = find_dis(apply_solution(self.test_map, solution))
+		dis = self.dis_finder.get(solution)
 		n = len(solution)
 		if dis == -1:
 			self.visited.add(solution_hash)
-			return self.best[n] + 1, False,
+			return MAX_LEVEL, None
 		if not dis in self.to_expand[n]:
 			self.to_expand[n][dis] = []
 			if dis in self.to_pulldown[n]:
