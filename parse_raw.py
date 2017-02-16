@@ -5,8 +5,12 @@ def parse_raw(f):
 		content = file.read()
 	num = re.findall(">[0-9]+ walls<", content)
 	num = num[0][1: -7]
-	score = re.findall(">[0-9]+<\/td><\/tr><tr class=\"scoreRow1", content)
-	score = score[0][1:-30]
+	score = re.findall('[0-9]+<\/a><\/td><td style=\"text-align:right;\">', content)
+	if score:
+		score = score[0][:-39]
+	if not score:
+		score = re.findall(">[0-9]+<\/td><\/tr><tr class=\"scoreRow1", content)
+		score = score[0][1:-30]
 	map_id = re.findall("resetwalls\([0-9]+\)", content)
 	map_id = map_id[0][11: -1]
 	L = len(re.findall(map_id + ",.,0", content)) / 2

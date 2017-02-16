@@ -4,6 +4,7 @@ from populated_structure_solutions import populated_structure_solutions
 from solution_puller import SolutionPuller
 from next_point import NextPoint
 from dis_finder import DisFinder
+from neighbor_finder import NeighborFinder
 
 def find_solution(test_map, N, ANS):
 	time0 = clock()
@@ -15,16 +16,18 @@ def find_solution(test_map, N, ANS):
 	print "Find structure", int((time1 - time0) * 10) * 0.1
 	print solution_space.get_printable_status()
 	next_point = NextPoint(test_map)
-	solution_puller = SolutionPuller(solution_space, N, next_point)
+	neighbor_finder = NeighborFinder(test_map)
+	solution_puller = SolutionPuller(solution_space, N, next_point, neighbor_finder)
 	r = 0
 	while True: # solution_puller.SUCCESS == False
 		r += 1
 		solution_puller.pull_down()
 		solution_puller.pull_up()
-		if clock() - time_last > 30:
+		if clock() - time_last > 1:
 			time_last = clock()
 			print "ROUND", r, "ELAPSED", int((clock() - time0) * 10) * 0.1
-			print solution_space.get_printable_status(), solution_puller.LEVEL
+			print solution_space.get_printable_status(), solution_puller.UP_LEVEL, solution_puller.DOWN_LEVEL
 		if clock() - time0 > 6000 or solution_space.SUCCESS:
-			print solution_space.get_printable_status()
+			print "ROUND", r, "ELAPSED", int((clock() - time0) * 10) * 0.1
+			print solution_space.get_printable_status(), solution_puller.UP_LEVEL, solution_puller.DOWN_LEVEL
 			break

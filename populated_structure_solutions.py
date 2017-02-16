@@ -5,13 +5,12 @@ O = "0"
 from get_printable_map import get_printable_map
 from get_solution_hash import get_solution_hash
 from apply_solution import apply_solution
-from trimer import Trimer
 
+TIME_SAVER = 15 # the smaller the quicker, recommand 7
 
 class Structure(object):
 	def __init__(self, test_map, solution_space, N):
-		self.trimer = Trimer(test_map)
-		self.N = N
+		self.M = self.N = N
 		self.solution_space = solution_space
 		self.test_map = test_map
 		L = len(test_map)
@@ -47,29 +46,39 @@ class Structure(object):
 		self.find_structure(-1, [set([0, 1])], set(), [])
 
 	def find_structure(self, index, disjoint_set, solution, tangents):
-		if clock() - self.time_last > 30:
+		# self.M = self.N - int((clock() - self.time0) / TIME_SAVER)
+		if clock() - self.time_last > 5:
 			self.time_last = clock()
 			print get_printable_map(apply_solution(self.test_map, solution))
 			print tangents, "ELAPSED", int((clock() - self.time0) * 10) * 0.1
-		for i in xrange(index + 1, len(self.paths)):
+		i = index + 1
+		while i < len(self.paths):
 			path_len, points, tangent = self.paths[i]
-			if path_len + len(solution) > self.N:
+			if path_len + len(solution) > self.M:
+				i += 1
 				continue
 			if points & solution:
+				i += 1
 				continue
 			n_disjoint_set, is_valid = self.get_disjoint_set(disjoint_set, tangent)
 			if not is_valid:
+				i += 1
 				continue
 			n_solution = set(solution)
 			n_solution.update(points)
-			self.trimer.trim(n_solution)
-			_, duplication = self.solution_space.addSafe(n_solution)
+			_, duplication = self.solution_space.add(n_solution)
 			duplication = duplication == None # 
 			if duplication:
+				i += 1
 				continue
 			n_tangents = list(tangents)
 			n_tangents.append(tangent)
 			self.find_structure(i + 1, n_disjoint_set, n_solution, n_tangents)
+			weight = int((clock() - self.time0) / TIME_SAVER)
+			if weight == 0:
+				i += 1 + int(len(points) * (clock() - self.time0) / TIME_SAVER)
+			else:
+				i += int(len(points) ** weight * (clock() - self.time0) / TIME_SAVER)
 
 	def get_disjoint_set(self, disjoint_set, tangent):
 		connected = set(tangent)

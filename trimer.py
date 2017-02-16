@@ -28,6 +28,8 @@ class Trimer(object):
 				to_trim.add((x, y))
 		if to_trim:
 			solution -= to_trim
+			return True
+		return False
 
 
 

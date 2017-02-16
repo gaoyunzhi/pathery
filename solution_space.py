@@ -2,10 +2,12 @@ from apply_solution import apply_solution
 from get_solution_hash import get_solution_hash
 from find_dis import find_dis
 from get_printable_map import get_printable_map
+from trimer import Trimer
 
 MAX_LEVEL = 10000
 class SolutionSpace(object):
 	def __init__(self, test_map, N, ANS, dis_finder):
+		self.trimer = Trimer(test_map)
 		self.ANS = ANS
 		self.best_solution = None
 		self.best = {}
@@ -25,16 +27,13 @@ class SolutionSpace(object):
 	def add(self, solution):
 		solution_hash = get_solution_hash(solution)
 		if solution_hash in self.visited:
-			raise Exception("solution already added")
-		return self._add(solution, solution_hash)
-
-	def addSafe(self, solution):
-		solution_hash = get_solution_hash(solution)
-		return self.addSafeWithHash(solution, solution_hash)
-
-	def addSafeWithHash(self, solution, solution_hash):
-		if solution_hash in self.visited:
 			return MAX_LEVEL, None
+		trimed = self.trimer.trim(solution)
+		if trimed:
+			self.visited.add(solution_hash)
+			solution_hash = get_solution_hash(solution)
+			if solution_hash in self.visited:
+				return MAX_LEVEL, None
 		return self._add(solution, solution_hash)
 
 	def _add(self, solution, solution_hash):
